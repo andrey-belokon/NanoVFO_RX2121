@@ -8,6 +8,9 @@
 #define DISPLAY_OLED_SH1106_128x64     // OLED 1.3" 128x64 (132x64)
 //#define DISPLAY_OLED128x64     // OLED 0.96" 128x64
 
+// 18650 bat connected to PIN_SWR_R via 10kohm
+#define SHOW_BAT
+
 // keypad pool interval in ms
 #define POOL_INTERVAL       50
 // продолжительность для длинного нажатия

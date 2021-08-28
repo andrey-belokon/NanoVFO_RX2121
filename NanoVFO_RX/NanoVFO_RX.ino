@@ -304,7 +304,8 @@ void loop()
       }
     }
 
-    trx.VCC = (((long)inPower.Read())*563/20 + (long)trx.VCC*100*95/100) /100;
+    trx.VCC = (long)inPower.Read()*58/1000; // в десятых долях вольта с учетом делителя
+    trx.VBAT = inSWRR.Read()/100; // в десятых долях вольта 
 
     UpdateFreq();
     UpdateBandCtrl();

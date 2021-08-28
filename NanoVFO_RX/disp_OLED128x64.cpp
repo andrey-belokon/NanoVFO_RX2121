@@ -3,6 +3,7 @@
 #include "SSD1306AsciiAvrI2c.h"
 #include "fonts\lcdnums14x24mod.h"
 #include "fonts\quad7x8.h"
+#include "fonts\lcdbat.h"
 #include "utils.h"
 #ifdef RTC_ENABLE
   #include "RTC.h"
@@ -23,7 +24,8 @@ uint8_t last_attpre;
 uint8_t init_smetr;
 uint8_t last_sm[15];
 long last_tmtm;
-uint16_t last_VCC = 0xFFFF;
+uint8_t last_VCC = 0xFF;
+uint8_t last_bat = 0xFF;
 
 void Display_OLED128x64::setBright(uint8_t brightness)
 {
@@ -86,8 +88,49 @@ void Display_OLED128x64::Draw(TRX& trx)
     oled64.print(trx.GetBandInfo(last_BandIndex).name);
   }
 
+#ifdef SHOW_BAT
+  if (trx.VBAT > 20) {
+    byte new_bat = 0;
+    if (trx.VBAT > 39) new_bat = 4;
+    else if (trx.VBAT > 37) new_bat = 3;
+    else if (trx.VBAT > 35) new_bat = 2;
+    else if (trx.VBAT > 33) new_bat = 1;
+  
+    if (new_bat != last_bat || new_bat == 0) {
+      last_bat = new_bat;
+      oled64.setFont(lcdbat2);
+      oled64.setCursor(61,0);
+      switch (new_bat) {
+        case 0:
+          if (millis() % 1000 < 500) oled64.print("136");
+          else oled64.print("000");
+          break;
+        case 1:
+          oled64.print("236");
+          break;
+        case 2:
+          oled64.print("246");
+          break;
+        case 3:
+          oled64.print("256");
+          break;
+        case 4:
+          oled64.print("257");
+          break;
+      }
+      //oled64.setCursor(0,0); // debug VBAT voltage
+      //oled64.print(trx.VBAT);
+    }
+    oled64.setFont(X11fixed7x14);
+  }
+#endif
+
   if (trx.sideband != last_mode) {
-    oled64.setCursor(50,0);
+    #ifdef SHOW_BAT
+      oled64.setCursor(32,0);
+    #else
+      oled64.setCursor(50,0);
+    #endif
     last_mode = trx.sideband;
     switch (last_mode) {
       case LSB:
@@ -217,10 +260,10 @@ void Display_OLED128x64::Draw(TRX& trx)
   if (trx.VCC != last_VCC) {
     last_VCC = trx.VCC;
     oled64.setCursor(50, 7);
-    if (last_VCC > 1000) {
-      oled64.print(last_VCC/1000);
+    if (last_VCC > 10) {
+      oled64.print(last_VCC/10);
       oled64.print('.');
-      oled64.print(last_VCC/100 % 10);
+      oled64.print(last_VCC % 10);
     } else
       oled64.print("    ");
   }
@@ -330,7 +373,7 @@ void Display_OLED128x64::clear()
 {
   oled64.clear();
   last_freq=0;
-  last_fast=last_lock=last_mem=last_attpre=last_mode=last_BandIndex=0xFF;
+  last_fast=last_lock=last_mem=last_attpre=last_mode=last_BandIndex=last_bat=last_VCC=0xFF;
   init_smetr=0;
   for (uint8_t i=0; i < 15; i++) last_sm[i]=0;
   last_tmtm=0;

@@ -18,7 +18,8 @@ class TRX {
     uint8_t AttPre;    // 0-nothing; 1-ATT; 2-Preamp
     uint8_t sideband;
     uint8_t SMeter; // 0..15 
-    uint16_t VCC;
+    uint8_t VCC;
+    uint8_t VBAT;
 
 	  TRX();
     void NextBand();
