@@ -24,7 +24,7 @@ uint8_t last_attpre;
 uint8_t init_smetr;
 uint8_t last_sm[15];
 long last_tmtm;
-uint8_t last_VCC = 0xFF;
+uint16_t last_VCC = 0xFFFF;
 uint8_t last_bat = 0xFF;
 
 void Display_OLED128x64::setBright(uint8_t brightness)
@@ -89,12 +89,12 @@ void Display_OLED128x64::Draw(TRX& trx)
   }
 
 #ifdef SHOW_BAT
-  if (trx.VBAT > 20) {
+  if (trx.VBAT > 2000) {
     byte new_bat = 0;
-    if (trx.VBAT > 39) new_bat = 4;
-    else if (trx.VBAT > 37) new_bat = 3;
-    else if (trx.VBAT > 35) new_bat = 2;
-    else if (trx.VBAT > 33) new_bat = 1;
+    if (trx.VBAT > 3900) new_bat = 4;
+    else if (trx.VBAT > 3700) new_bat = 3;
+    else if (trx.VBAT > 3500) new_bat = 2;
+    else if (trx.VBAT > 3300) new_bat = 1;
   
     if (new_bat != last_bat || new_bat == 0) {
       last_bat = new_bat;
@@ -260,10 +260,10 @@ void Display_OLED128x64::Draw(TRX& trx)
   if (trx.VCC != last_VCC) {
     last_VCC = trx.VCC;
     oled64.setCursor(50, 7);
-    if (last_VCC > 10) {
-      oled64.print(last_VCC/10);
+    if (last_VCC > 1000) {
+      oled64.print(last_VCC/1000);
       oled64.print('.');
-      oled64.print(last_VCC % 10);
+      oled64.print((last_VCC/100) % 10);
     } else
       oled64.print("    ");
   }

@@ -304,8 +304,11 @@ void loop()
       }
     }
 
-    trx.VCC = (long)inPower.Read()*58/1000; // в десятых долях вольта с учетом делителя
-    trx.VBAT = inSWRR.Read()/100; // в десятых долях вольта 
+    const long alpha = 75;
+    long newval = (long)inPower.Read()*58/10; // в мв
+    trx.VCC = (trx.VCC*alpha + newval*(100-alpha))/100;
+    newval = inSWRR.Read(); // в мв
+    trx.VBAT = (trx.VBAT*alpha + newval*(100-alpha))/100;
 
     UpdateFreq();
     UpdateBandCtrl();
