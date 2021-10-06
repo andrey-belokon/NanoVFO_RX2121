@@ -27,6 +27,13 @@ long last_tmtm;
 uint16_t last_VCC = 0xFFFF;
 uint8_t last_bat = 0xFF;
 
+void draw_space(byte cnt)
+{
+  for (byte i=0; i < cnt; i++) oled64.print(' ');
+}
+
+#define  PRNSTR(x)    ((const __FlashStringHelper*)PSTR(x))
+
 void Display_OLED128x64::setBright(uint8_t brightness)
 {
   if (brightness < 0) brightness = 0;
@@ -82,7 +89,7 @@ void Display_OLED128x64::Draw(TRX& trx)
   
   if (trx.BandIndex != last_BandIndex) {
     oled64.setCursor(0,0);
-    oled64.print("      ");
+    draw_space(4);
     oled64.setCursor(0,0);
     last_BandIndex = trx.BandIndex;
     oled64.print(trx.GetBandInfo(last_BandIndex).name);
@@ -102,20 +109,20 @@ void Display_OLED128x64::Draw(TRX& trx)
       oled64.setCursor(61,0);
       switch (new_bat) {
         case 0:
-          if (millis() % 1000 < 500) oled64.print("136");
-          else oled64.print("000");
+          if (millis() % 1000 < 500) oled64.print(PRNSTR("136"));
+          else oled64.print(PRNSTR("000"));
           break;
         case 1:
-          oled64.print("236");
+          oled64.print(PRNSTR("236"));
           break;
         case 2:
-          oled64.print("246");
+          oled64.print(PRNSTR("246"));
           break;
         case 3:
-          oled64.print("256");
+          oled64.print(PRNSTR("256"));
           break;
         case 4:
-          oled64.print("257");
+          oled64.print(PRNSTR("257"));
           break;
       }
       //oled64.setCursor(0,0); // debug VBAT voltage
@@ -134,13 +141,13 @@ void Display_OLED128x64::Draw(TRX& trx)
     last_mode = trx.sideband;
     switch (last_mode) {
       case LSB:
-        oled64.print("LSB");
+        oled64.print(PRNSTR("LSB"));
         break;
       case USB:
-        oled64.print("USB");
+        oled64.print(PRNSTR("USB"));
         break;
       case AM:
-        oled64.print("AM ");
+        oled64.print(PRNSTR("AM "));
         break;
     }
   }
@@ -229,60 +236,54 @@ void Display_OLED128x64::Draw(TRX& trx)
     switch (last_attpre = trx.AttPre)
     {
     case 0:
-      oled64.print("   ");
+      draw_space(3);
       break;
     case 1:
-      oled64.print("ATT");
+      oled64.print(PRNSTR("ATT"));
       break;
     case 2:
-      oled64.print("PRE");
+      oled64.print(PRNSTR("PRE"));
       break;
     }
   }
 
-  if (trx.Freq == trx.FreqMemo)
-  {
-    if (last_mem != 1)
-    {
-      oled64.setCursor(25, 7);
-      oled64.print("MEM");
-      last_mem = 1;
-    }
-  } else {
-    if (last_mem != 0)
-    {
-      oled64.setCursor(25, 7);
-      oled64.print("   ");
-      last_mem = 0;
-    }
+  uint16_t new_mem = trx.ChannelIndex | (trx.ChannelMode ? 0x80 : 0);
+  if (last_mem != new_mem) {
+    last_mem = new_mem;
+    oled64.setCursor(50, 7);
+    if (trx.ChannelMode) {
+      if (trx.ChannelIndex < 10) oled64.print("C0");
+      else oled64.print('C');
+      oled64.print(trx.ChannelIndex);
+    } else draw_space(3);
   }
 
   if (trx.VCC != last_VCC) {
     last_VCC = trx.VCC;
-    oled64.setCursor(50, 7);
+    oled64.setCursor(100, 7);
     if (last_VCC > 1000) {
       oled64.print(last_VCC/1000);
       oled64.print('.');
       oled64.print((last_VCC/100) % 10);
     } else
-      oled64.print("    ");
+      draw_space(4);
   }
 
   if (trx.Fast != last_fast) {
-    oled64.setCursor(82, 7);
+    oled64.setCursor(25, 7);
     if ((last_fast = trx.Fast) != 0)
-      oled64.print("FST");
+      oled64.print(PRNSTR("FST"));
     else
-      oled64.print("   ");
+      draw_space(3);
   }
 
   if (trx.Lock != last_lock)
   {
-    oled64.setCursor(107, 7);
+    oled64.setCursor(75, 7);
     if ((last_lock = trx.Lock) != 0)
-      oled64.print("LCK");
+      oled64.print(PRNSTR("LCK"));
     else
-      oled64.print("   ");
+      draw_space(3);
   }
    
 }
@@ -294,10 +295,10 @@ void Display_OLED128x64::DrawItemEdit(PGM_P text, int value)
   oled64.setCursor(10,1);
   oled64.print((const __FlashStringHelper*)text);
   oled64.setCursor(0,4);
-  oled64.print("EDIT:");
+  oled64.print(PRNSTR("EDIT:"));
   oled64.setCursor(50,4);
   oled64.print(value);
-  oled64.print("     ");
+  draw_space(5);
 }
 
 void Display_OLED128x64::DrawItemValue(int value)
@@ -305,7 +306,7 @@ void Display_OLED128x64::DrawItemValue(int value)
   oled64.setFont(X11fixed7x14);
   oled64.setCursor(50,4);
   oled64.print(value);
-  oled64.print("     ");
+  draw_space(5);
 }
 
 void Display_OLED128x64::DrawItems(PGM_P* text, uint8_t selected)
@@ -339,9 +340,53 @@ void Display_OLED128x64::DrawFreqItems(TRX& trx, uint8_t idx, uint8_t selected)
     }
     oled64.print('.');
     f = (info.start / 1000) % 1000;
-    if (f <= 9) oled64.print("00");
-    else if (f <= 99) oled64.print('0');
+    if (f <= 9) oled64.print('0');
+    if (f <= 99) oled64.print('0');
     oled64.print(f);
+  }
+}
+
+void Display_OLED128x64::DrawChannelItems(TRX& trx, uint8_t idx, uint8_t selected)
+{
+  struct MemoInfo ci;
+  oled64.clear();
+  oled64.setFont(System5x7);
+  for (byte i=0; i < 8 && idx+i < CHANNEL_COUNT; i++) {
+    byte ii = idx+i;
+    oled64.setCursor(2,i);
+    if (i == selected) oled64.print('>');
+    oled64.setCursor(12,i);
+    if (ii < 10) oled64.print('0');
+    oled64.print(ii);
+    draw_space(2);
+    trx.GetChannelInfo(ii,&ci);
+    if (ci.Freq == 0) oled64.print(PRNSTR("- - - - -"));
+    else {
+      int f = ci.Freq / 1000000L;
+      if (f == 0)
+        draw_space(3);
+      else {
+        if (f < 10) oled64.print(' ');
+        oled64.print(f);
+        oled64.print('.');
+      }
+      f = ((ci.Freq+500) / 1000) % 1000;
+      if (f < 100) oled64.print('0');
+      if (f < 10) oled64.print('0');
+      oled64.print(f);
+      draw_space(2);
+      switch (ci.sideband) {
+        case LSB:
+          oled64.print('L');
+          break;
+        case USB:
+          oled64.print('U');
+          break;
+        case AM:
+          oled64.print('A');
+          break;
+      }
+    }
   }
 }
 
@@ -350,6 +395,16 @@ void Display_OLED128x64::DrawSelected(uint8_t selected)
   oled64.setFont(X11fixed7x14);
   for (byte i=0; i < 4; i++) {
     oled64.setCursor(2,i<<1);
+    if (i == selected) oled64.print('>');
+    else oled64.print(' ');
+  }
+}
+
+void Display_OLED128x64::DrawSelected8(uint8_t selected)
+{
+  oled64.setFont(System5x7);
+  for (byte i=0; i < 8; i++) {
+    oled64.setCursor(2,i);
     if (i == selected) oled64.print('>');
     else oled64.print(' ');
   }
@@ -373,7 +428,7 @@ void Display_OLED128x64::clear()
 {
   oled64.clear();
   last_freq=0;
-  last_fast=last_lock=last_mem=last_attpre=last_mode=last_BandIndex=last_bat=last_VCC=0xFF;
+  last_fast=last_lock=last_attpre=last_mode=last_BandIndex=last_bat=last_VCC=last_mem=0xFF;
   init_smetr=0;
   for (uint8_t i=0; i < 15; i++) last_sm[i]=0;
   last_tmtm=0;
