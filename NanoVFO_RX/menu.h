@@ -428,3 +428,49 @@ void select_band()
     }
   }
 }
+
+int select_channel(uint8_t start)
+{
+  uint8_t mi=0,sel=0;
+  mi = start;
+  if (mi+8 >= CHANNEL_COUNT) {
+    mi = CHANNEL_COUNT-8;
+    sel = start-mi;
+  }
+  disp.DrawChannelItems(trx,mi,sel);
+  while (1) {
+    PoolKeyboard();
+    switch (keyb_key) {
+      case 5:
+      case 3:
+        return mi+sel;
+      case 1:
+      case 2:
+      case 4:
+        // exit
+        return -1;
+    }
+    long d=encoder.GetDelta();
+    if (d <= -3 && mi+sel > 0) {
+      if (sel > 0) {
+        sel--;
+        disp.DrawSelected8(sel);
+      } else {
+        mi--;
+        disp.DrawChannelItems(trx,mi,sel);
+      }
+      delay(100);
+      encoder.GetDelta();
+    } else if (d >= 3 && mi+sel < BAND_COUNT-1) {
+      if (sel < 7) {
+        sel++;
+        disp.DrawSelected8(sel);
+      } else {
+        mi++;
+        disp.DrawChannelItems(trx,mi,sel);
+      }
+      delay(100);
+      encoder.GetDelta();
+    }
+  }
+}

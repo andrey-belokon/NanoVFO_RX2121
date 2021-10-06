@@ -232,13 +232,24 @@ void loop()
   if (!trx.Lock) {
     long delta = encoder.GetDelta();
     if (delta) {
-      //if (last_key == 3 || (keyb_long && keypad.Read() == 3)) delta *= 10;
-      if (trx.Fast) {
-        delta *= 20;
-        if (delta < -20000) delta = -20000;
-        if (delta > 20000)  delta = 20000;
-      } else if (trx.sideband == AM) delta *= 2;
-      trx.ChangeFreq(delta);
+      if (trx.ChannelMode) {
+        delta /= 30;
+        if (delta > 0) trx.SwitchFreqToNextChannel(true);
+        else if (delta < 0) trx.SwitchFreqToNextChannel(false);
+        if (delta != 0) {
+          disp.Draw(trx);
+          delay(300);
+          encoder.GetDelta();
+        }
+      } else {
+        //if (last_key == 3 || (keyb_long && keypad.Read() == 3)) delta *= 10;
+        if (trx.Fast) {
+          delta *= 20;
+          if (delta < -20000) delta = -20000;
+          if (delta > 20000)  delta = 20000;
+        } else if (trx.sideband == AM) delta *= 2;
+        trx.ChangeFreq(delta);
+      }
       power_save(0);
     }
   }
@@ -257,8 +268,20 @@ void loop()
             [4]  [2] 
         */
       case 1:
-        if (keyb_long) trx.SaveFreqToMemo();
-        else trx.SwitchFreqToMemo();
+        if (keyb_long) {
+          if (trx.ChannelMode) {
+            trx.DeleteFreqFromChannel(trx.ChannelIndex);
+            trx.SwitchFreqToNextChannel(true);
+          } else {
+            int ch = select_channel(0);
+            if (ch >= 0) trx.SaveFreqToChannel(ch);
+            keypad.waitUnpress();
+            disp.clear();
+            power_save(0);
+          }
+        } else {
+          trx.SwitchChannelMode();
+        }
         break;
       case 2:
         if (keyb_long) {
@@ -274,6 +297,7 @@ void loop()
           disp.clear();
           power_save(0);
         } else {
+          trx.ChannelMode = false;
           select_band();
           keypad.waitUnpress();
           disp.clear();
@@ -282,7 +306,14 @@ void loop()
         break;
       case 4:
         if (keyb_long) trx.Lock = !trx.Lock;
-        else trx.Fast = !trx.Fast;
+        else if (not trx.ChannelMode) trx.Fast = !trx.Fast;
+        else {
+          int ch = select_channel(trx.ChannelIndex);
+          if (ch >= 0) trx.SwitchFreqToChannel(ch);
+          keypad.waitUnpress();
+          disp.clear();
+          power_save(0);
+        }
         break;
       case 5:
         break;
